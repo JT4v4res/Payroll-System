@@ -6,7 +6,7 @@ class SQLManager:
     def __init__(self):
         self.db = 'payroll'
         self.user = 'root'
-        self.passwd = '5657'
+        self.passwd = ''
         self.conn = None
         self.cursor = None
         self.table = 'employees'
