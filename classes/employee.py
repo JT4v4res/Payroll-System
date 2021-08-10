@@ -1,5 +1,40 @@
+from classes import sqlmanager
+from sqlalchemy import Column, Integer, String, Boolean
+
 jTypes = {"hourly": "hourly wage", "salaried": "monthly salary", "commissioned": "commission"}
 
+# This class provides our mapping and planning for implementing and manipulating
+# data and other functionality relating to our payroll employees.
+class Employee(sqlmanager.Base):
+    __tablename__ = 'employees'
+
+    id = Column(Integer, primary_key=True, unique=True, autoincrement=True, nullable=False)
+    name = Column(String(55))
+    address = Column(String(90))
+    jType = Column(String(25))
+    payMethod = Column(String(25))
+    isInSyndicate = Column(Boolean)
+    syndicateCharge = Column(String(10))
+    serviceCharge = Column(String(10))
+    wage = Column(String(10))
+    pointCardId = Column(String(80))
+    workedHours = Column(Integer)
+    sellCount = Column(Integer)
+
+    def __init__(self, id, name, address, jType, payMethod, isInSyndicate, syndicateCharge,
+                 serviceCharge, wage, pointCardId, workedHours, sellCount):
+        self.id = id
+        self.name = name
+        self.address = address
+        self.jType = jType
+        self.payMethod = payMethod
+        self.isInSyndicate = isInSyndicate
+        self.syndicateCharge = syndicateCharge
+        self.serviceCharge = serviceCharge
+        self.wage = wage
+        self.pointCardId = pointCardId
+        self.workedHours = workedHours
+        self.sellCount = sellCount
 
 class Hourly:
     def __init__(self, name=None, address=None, job_Type='hourly', syndicate=False):
@@ -15,6 +50,7 @@ class Hourly:
         self.pointCardId = None
         self.workedHours = None
 
+    # Method that returns our employee's name
     def getEmployeeName(self):
         return self.name
 
@@ -26,18 +62,19 @@ class Hourly:
              self.serviceCharge, str(self.wage), self.pointCardId, self.workedHours, None]
         )
 
+    # Method that constructs our class from the result of SELECT query in database
     def constructHourlyFSelect(self, SelectResult):
-        self.id = SelectResult[0].index('id')
-        self.name = SelectResult[0].index('employee_name')
-        self.address = SelectResult[0].index('employee_addr')
-        self.jType = SelectResult[0].index('jType')
-        self.payMethod = SelectResult[0].index('PayMethod')
-        self.isInSyndicate = SelectResult[0].index('isInSyndicate')
-        self.syndicateCharge = SelectResult[0].index('syndicateCharge')
-        self.serviceCharge = SelectResult[0].index('serviceCharge')
-        self.wage = int(SelectResult[0].index('wage'))
-        self.pointCardId = SelectResult[0].index('cardId')
-        self.workedHours = SelectResult[0].index('workedHours')
+        self.id = SelectResult.id
+        self.name = SelectResult.name
+        self.address = SelectResult.address
+        self.jType = SelectResult.jType
+        self.payMethod = SelectResult.payMethod
+        self.isInSyndicate = SelectResult.isInSyndicate
+        self.syndicateCharge = SelectResult.syndicateCharge
+        self.serviceCharge = SelectResult.serviceCharge
+        self.wage = int(SelectResult.wage)
+        self.pointCardId = SelectResult.pointCardId
+        self.workedHours = SelectResult.workedHours
 
 
 class Salaried:
@@ -62,6 +99,7 @@ class Salaried:
 
 class Comissioned:
     def __init__(self, name=None, address=None, job_Type='commissioned', syndicate=False):
+        self.id = None
         self.name = name
         self.address = address
         self.jType = job_Type
@@ -70,10 +108,23 @@ class Comissioned:
         self.syndicateCharge = None
         self.serviceCharge = None
         self.wage = None
-        self.sell_date = None
-        self.sell_value = None
-        self.sale_id = None
-        self.sellCount = None
+        self.saleDate = None
+        self.salePrice = None
+        self.saleId = None
+        self.buyerName = None
+        self.sellCount = 0
+
+    # Method that returns our employee's name
+    def getEmployeeName(self):
+        return self.name
+
+    # Method that updates our employee's sell counter
+    def updateSellCount(self):
+        self.sellCount += 1
+
+    # Method that returns our employee's sell counter
+    def getSellCount(self):
+        return self.sellCount
 
     # Method that returns our character's attributes as a tuple so we can access
     # them without having to directly access the attributes in the class
@@ -83,27 +134,19 @@ class Comissioned:
              self.syndicateCharge, self.serviceCharge, self.wage, None, None, self.sellCount]
         )
 
-
-# This class provides our mapping and planning for implementing and manipulating
-# data and other functionality relating to our payroll employees.
-class Employee:
-    def __init__(self, name=None, address=None, job_Type=None, syndicate=False):
-        self.id = None
-
-    # Method that returns our character's attributes as a tuple so we can access
-    # them without having to directly access the attributes in the class
-    def getEmployeeAttributes(self):
-        return tuple([self.name, self.address, self.jType, self.Payment, self.isInSyndicate])
-
-    # This method performs the reconstruction of the attributes of a given
-    # employee from the data stored and required through a query in our database
-    def constructFromSelect(self, SelectResult):
+    # Method that constructs our class from the result of SELECT query in database
+    def constructCommsFSelect(self, SelectResult):
         self.id = SelectResult.id
-        self.name = SelectResult.employee_name
-        self.address = SelectResult.employee_addr
+        self.name = SelectResult.name
+        self.address = SelectResult.address
         self.jType = SelectResult.jType
-        self.Payment = SelectResult.PayMethod
+        self.payMethod = SelectResult.payMethod
         self.isInSyndicate = SelectResult.isInSyndicate
-        self.pointCardId = SelectResult.cardId
-        self.SellResult = SelectResult.SellRes
-        self.serviceCharge = SelectResult.serv_charge
+        self.syndicateCharge = SelectResult.syndicateCharge
+        self.serviceCharge = SelectResult.serviceCharge
+        self.wage = int(SelectResult.wage)
+        self.sellCount = SelectResult.sellCount
+        self.saleId = None
+        self.saleDate = None
+        self.salePrice = None
+        self.buyerName = None

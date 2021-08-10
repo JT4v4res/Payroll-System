@@ -1,7 +1,9 @@
-import classes.system_postings, datetime
-from classes import employee, sqlmanager
+from classes import employee, sqlmanager, system_postings
+import uuid
 
 DbManager = sqlmanager.SQLManager()
+
+sqlmanager.Base.metadata.create_all(sqlmanager.engine)
 
 if __name__ == '__main__':
     while True:
@@ -13,13 +15,20 @@ if __name__ == '__main__':
         print("2 - Remove an employee")
         print("3 - Beat time")
         print("4 - Launch new sale")
+        print("5 - Launch Service Charge")
         print("6 - Update employee record")
-        print("4 - EXIT")
+        print("7 - EXIT")
         print("----------------------------")
         x = int(input('Enter your option: '))
         if x == 1:
             name = input('Enter the employee\'s name: ')
             address = input('Enter the employee\'s address: ')
+            isInSyndicate = input('Syndicate: True or False: ')
+            if isInSyndicate.lower() == 'true':
+                isInSyndicate = True
+            else:
+                isInSyndicate = False
+            wage = input('Employee\'s wage: ')
             print("----------------------------")
             print("----- Summary of jobs ------")
             print("---------- Hourly ----------")
@@ -29,27 +38,59 @@ if __name__ == '__main__':
             j_type = input('Enter the employee\'s job: ')
 
             if j_type.lower() == 'hourly':
-                New_Employee = employee.Hourly(name, address)
-                DbManager.insertInTable(New_Employee.getHourlyAttributes())
+                DbManager.insertInTable(
+                    employee.Employee(
+                        None,name,address,j_type,'hourly wage', isInSyndicate, None,
+                        None, wage, str(uuid.uuid4()), 0, None
+                    )
+                )
             elif j_type.lower() == 'salaried':
-                New_Employee = employee.Salaried(name, address)
-                DbManager.insertInTable(New_Employee.getSalariedAttributes())
+                DbManager.insertInTable(
+                    employee.Employee(
+                        None, name, address, j_type, 'monthly salary', isInSyndicate, None,
+                        None, wage, None, None, None
+                    )
+                )
             elif j_type.lower() == 'commissioned':
-                New_Employee = employee.Comissioned(name, address)
-                DbManager.insertInTable(New_Employee.getComissionedAttributes())
+                DbManager.insertInTable(
+                    employee.Employee(
+                        None, name, address, j_type, 'commission', isInSyndicate, None,
+                        None, wage, None, None, 0
+                    )
+                )
         elif x == 2:
             name = input('Enter the name of the employee to be removed: ')
             DbManager.deleteFromTable(name)
         elif x == 3:
             name = input('Enter your name: ')
-            Point_card = DbManager.searchInTable(name, 1)
-            print(Point_card.getEmployeeName())
+            Point_card = system_postings.PointCard()
+            Point_card.constructHourlyFSelect(DbManager.searchInTable(name))
+
             arrival = int(input('Enter your time of entry: '))
             departure = int(input('Enter your departure time: '))
-            DbManager.updateTable(Point_card.postPointCard(arrival,departure), 6)
+
+            DbManager.updateTable(Point_card.getEmployeeName(), Point_card.postPointCard(arrival, departure), 0)
         elif x == 4:
             name = input('Enter your name: ')
-            New_sale = DbManager.searchInTable(name, 2)
+            New_sale = system_postings.SalePost()
+            New_sale.constructCommsFSelect(DbManager.searchInTable(name))
+
+            bName = input('Buyer name: ')
+            price = input('Sell price: ')
+
+            New_sale.getSale(bName, price)
+            sTup = New_sale.postNewSale()
+
+            DbManager.updateTable(New_sale.getEmployeeName(), New_sale.getSellCount(), 1)
+            DbManager.insertInTable(
+                system_postings.Sales(sTup[0], sTup[1], sTup[2],
+                                      sTup[3], sTup[4])
+            )
+        elif x == 5:
+            name = input('Enter employee\'s name: ')
+            charge = input('Enter the service charge: ')
+
+            DbManager.updateTable(name, charge, 2)
         elif x == 6:
             e_name = input('Enter your name: ')
             print("----------------------------")

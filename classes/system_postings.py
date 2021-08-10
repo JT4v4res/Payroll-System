@@ -1,6 +1,29 @@
-import classes.employee, uuid
+import uuid
+from datetime import datetime
+from classes import employee
+from classes import sqlmanager
+from sqlalchemy import Column, String, Date, Integer
 
-class PointCard(classes.employee.Hourly):
+
+class Sales(sqlmanager.Base):
+    __tablename__ = "sales"
+
+    id = Column(Integer, primary_key=True, unique=True, autoincrement=True, nullable=False)
+    saleId = Column(String(80))
+    sellerName = Column(String(55))
+    buyerName = Column(String(55))
+    saleDate = Column(Date)
+    salePrice = Column(String(10))
+
+    def __init__(self, saleId, sellerName, buyerName, saleDate, salePrice):
+        self.saleId = saleId
+        self.sellerName = sellerName
+        self.buyerName = buyerName
+        self.saleDate = saleDate
+        self.salePrice = salePrice
+
+
+class PointCard(employee.Hourly):
     pass
 
     def getPointCard(self):
@@ -13,21 +36,31 @@ class PointCard(classes.employee.Hourly):
 
     def postPointCard(self, arrival, departure):
         self.workedHours += (departure - arrival)
-        return tuple(self.workedHours,self.name)
+        return self.workedHours
 
-class SalePost(classes.employee.Comissioned):
+
+class SalePost(employee.Comissioned):
     pass
 
-    def getSale(self):
+    # Method that generate a uuid for the sale transaction and get the
+    # details of the sale
+    def getSale(self, buyerName, value):
+        self.buyerName = buyerName
+        self.salePrice = value
+        self.saleDate = datetime.today().strftime('%Y-%m-%d')
+        self.sellCount += 1
         self.getSaleId()
 
+    # Method that trully generates the uuid for transaction
     def getSaleId(self):
         self.saleId = str(uuid.uuid4())
 
+    # Method that returns the informations stored of sale
     def postNewSale(self):
-        return tuple(
-            [self.name, self.address, self.sell_date, self.sell_value, self.saleId]
+        return list(
+            [self.saleId, self.name, self.buyerName, self.saleDate, self.salePrice]
         )
 
-class PostNewCharge(classes.employee.Salaried):
+
+class PostNewCharge(employee.Salaried):
     pass
