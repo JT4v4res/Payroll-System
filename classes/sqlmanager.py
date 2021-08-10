@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # MySQL connector defined
-engine = create_engine("mysql+pymysql://root:Terumis2-@localhost:3307/payroll", echo=True)
+engine = create_engine("mysql+pymysql://root:passwod@localhost:3307/payroll", echo=True)
 
 # Define and create table
 Base = declarative_base()
