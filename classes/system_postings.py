@@ -1,26 +1,130 @@
 import uuid
-from datetime import datetime
+import datetime as dt
 from classes import employee
 from classes import sqlmanager
-from sqlalchemy import Column, String, Date, Integer
 
 
-class Sales(sqlmanager.Base):
-    __tablename__ = "sales"
+class PaymentSchedule:
+    def __init__(self):
+        pass
 
-    id = Column(Integer, primary_key=True, unique=True, autoincrement=True, nullable=False)
-    saleId = Column(String(80))
-    sellerName = Column(String(55))
-    buyerName = Column(String(55))
-    saleDate = Column(Date)
-    salePrice = Column(String(10))
+    def payWeekly(self, days=0):
+        DbManager = sqlmanager.SQLManager()
 
-    def __init__(self, saleId, sellerName, buyerName, saleDate, salePrice):
-        self.saleId = saleId
-        self.sellerName = sellerName
-        self.buyerName = buyerName
-        self.saleDate = saleDate
-        self.salePrice = salePrice
+        date = dt.date.today()
+
+        z = 0
+        while z <= days:
+            name_list = DbManager.searchInTable('hourly wage', 2)
+
+            if name_list:
+                lgt = len(name_list)
+
+                c = 0
+                while c < lgt:
+                    if name_list[c]:
+                        Func = employee.Hourly()
+                        Func.constructHourlyFSelect(DbManager.searchInTable(name_list[c], 0))
+
+                        if date == Func.nextPayment:
+                            Extra = Func.getExtraWorkHours()
+                            Normal = Func.workedHours - Extra
+
+                            Payment = (Normal * Func.wage) + ((Extra * Func.wage) * 1.5)\
+                                      - (Func.serviceCharge + Func.syndicateCharge)
+
+                            DbManager.updateTable(name_list[c], up_op=6, date=date)
+
+                            print("-----------------------")
+                            print("Payment Done")
+                            print("Employee: ", Func.getEmployeeName())
+                            print("Value: ", Payment)
+                            print("Paymethod: ", Func.payMethod)
+                            print("Date: ", date)
+                            print("-----------------------")
+
+                    c += 1
+            else:
+                return
+            z += 1
+            date += dt.timedelta(1)
+
+    def pay2Weekly(self, days=0):
+        DbManager = sqlmanager.SQLManager()
+
+        date = dt.date.today()
+
+        z = 0
+        while z <= days:
+            name_list = DbManager.searchInTable('commission', 2)
+
+            if name_list:
+                lgt = len(name_list)
+
+                c = 0
+                while c < lgt:
+                    if name_list[c]:
+                        cmsd = employee.Comissioned()
+
+                        cmsd.constructCommsFSelect(DbManager.searchInTable(name_list[c], 0))
+
+                        if date == cmsd.nextPayment:
+                            Payment = cmsd.getPayment(cmsd.getEmployeeName()) - \
+                                      (cmsd.syndicateCharge + cmsd.serviceCharge)
+
+                            DbManager.updateTable(name_list[c], up_op=6, date=date)
+
+                            print("-----------------------")
+                            print("Payment Done")
+                            print("Employee: ", cmsd.getEmployeeName())
+                            print("Value: ", Payment)
+                            print("Paymethod: ", cmsd.payMethod)
+                            print("Date: ", date)
+                            print("-----------------------")
+
+                    c += 1
+            else:
+                return
+            z += 1
+            date += dt.timedelta(1)
+
+    def payMonthly(self, days=0):
+        DbManager = sqlmanager.SQLManager()
+
+        date = dt.date.today()
+
+        z = 0
+        while z <= days:
+            name_list = DbManager.searchInTable('monthly salary', 2)
+
+            if name_list:
+                lgt = len(name_list)
+
+                c = 0
+                while c < lgt:
+                    if name_list[c]:
+                        sal = employee.Salaried()
+
+                        sal.constructSalFSelect(DbManager.searchInTable(name_list[c], 0))
+
+                        if date == sal.nextPayment:
+                            Payment = sal.wage - (sal.syndicateCharge + sal.serviceCharge)
+
+                            DbManager.updateTable(name_list[c], up_op=6, date=date)
+
+                            print("-----------------------")
+                            print("Payment Done")
+                            print("Employee: ", sal.getEmployeeName())
+                            print("Value: ", Payment)
+                            print("Paymethod: ", sal.payMethod)
+                            print("Date: ", date)
+                            print("-----------------------")
+
+                    c += 1
+            else:
+                return
+            z += 1
+            date += dt.timedelta(1)
 
 
 class PointCard(employee.Hourly):
@@ -47,7 +151,7 @@ class SalePost(employee.Comissioned):
     def getSale(self, buyerName, value):
         self.buyerName = buyerName
         self.salePrice = value
-        self.saleDate = datetime.today().strftime('%Y-%m-%d')
+        self.saleDate = dt.date.today().strftime('%Y-%m-%d')
         self.sellCount += 1
         self.getSaleId()
 
@@ -60,7 +164,3 @@ class SalePost(employee.Comissioned):
         return list(
             [self.saleId, self.name, self.buyerName, self.saleDate, self.salePrice]
         )
-
-
-class PostNewCharge(employee.Salaried):
-    pass

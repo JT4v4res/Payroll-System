@@ -1,5 +1,8 @@
-from classes import employee, sqlmanager, system_postings
+import datetime
+
+from classes import sqlmanager, system_postings
 import uuid
+import datetime as dt
 
 DbManager = sqlmanager.SQLManager()
 
@@ -7,7 +10,6 @@ sqlmanager.Base.metadata.create_all(sqlmanager.engine)
 
 if __name__ == '__main__':
     while True:
-        print("----------------------------")
         print("Welcome to Payroll System")
         print("Please, select an action")
         print("----------------------------")
@@ -15,9 +17,10 @@ if __name__ == '__main__':
         print("2 - Remove an employee")
         print("3 - Beat time")
         print("4 - Launch new sale")
-        print("5 - Launch Service Charge")
+        print("5 - Launch service charge")
         print("6 - Update employee record")
-        print("7 - EXIT")
+        print("7 - Make today\'s payments")
+        print("11 - EXIT")
         print("----------------------------")
         x = int(input('Enter your option: '))
         if x == 1:
@@ -37,25 +40,37 @@ if __name__ == '__main__':
             print("----------------------------")
             j_type = input('Enter the employee\'s job: ')
 
+            if isInSyndicate:
+                tax = input('Enter the percent of syndicate charge: ')
+                DbManager.insertInTable(
+                    sqlmanager.Syndicate(
+                        None, name, address, tax, 0
+                    )
+                )
+
+            payMethod = input('Choose your paymethod between: \n 1.Check by mail\n 2.Check in hand\n 3.Account deposit\n opt:')
+
             if j_type.lower() == 'hourly':
                 DbManager.insertInTable(
-                    employee.Employee(
-                        None,name,address,j_type,'hourly wage', isInSyndicate, None,
-                        None, wage, str(uuid.uuid4()), 0, None
+                    sqlmanager.Employee(
+                        None, name, address, j_type, 'hourly wage', payMethod, isInSyndicate, 0,
+                        0, dt.date.today() + dt.timedelta(7), wage, str(uuid.uuid4()), 0, None, None
                     )
                 )
             elif j_type.lower() == 'salaried':
                 DbManager.insertInTable(
-                    employee.Employee(
-                        None, name, address, j_type, 'monthly salary', isInSyndicate, None,
-                        None, wage, None, None, None
+                    sqlmanager.Employee(
+                        None, name, address, j_type, 'monthly salary', payMethod, isInSyndicate, 0,
+                        0, dt.date.today() + dt.timedelta(30), wage, None, None, None, None
                     )
                 )
             elif j_type.lower() == 'commissioned':
+                percentComm = input('Enter the percentual of commission: ')
+
                 DbManager.insertInTable(
-                    employee.Employee(
-                        None, name, address, j_type, 'commission', isInSyndicate, None,
-                        None, wage, None, None, 0
+                    sqlmanager.Employee(
+                        None, name, address, j_type, 'commission', payMethod, isInSyndicate, 0,
+                        0, dt.date.today() + dt.timedelta(15), wage, None, None, 0, percentComm
                     )
                 )
         elif x == 2:
@@ -64,7 +79,7 @@ if __name__ == '__main__':
         elif x == 3:
             name = input('Enter your name: ')
             Point_card = system_postings.PointCard()
-            Point_card.constructHourlyFSelect(DbManager.searchInTable(name))
+            Point_card.constructHourlyFSelect(DbManager.searchInTable(name, 0))
 
             arrival = int(input('Enter your time of entry: '))
             departure = int(input('Enter your departure time: '))
@@ -73,7 +88,7 @@ if __name__ == '__main__':
         elif x == 4:
             name = input('Enter your name: ')
             New_sale = system_postings.SalePost()
-            New_sale.constructCommsFSelect(DbManager.searchInTable(name))
+            New_sale.constructCommsFSelect(DbManager.searchInTable(name, 0))
 
             bName = input('Buyer name: ')
             price = input('Sell price: ')
@@ -83,8 +98,8 @@ if __name__ == '__main__':
 
             DbManager.updateTable(New_sale.getEmployeeName(), New_sale.getSellCount(), 1)
             DbManager.insertInTable(
-                system_postings.Sales(sTup[0], sTup[1], sTup[2],
-                                      sTup[3], sTup[4])
+                sqlmanager.Sales(sTup[0], sTup[1], sTup[2],
+                                      sTup[3], sTup[4], None)
             )
         elif x == 5:
             name = input('Enter employee\'s name: ')
@@ -105,21 +120,39 @@ if __name__ == '__main__':
             y = int(input('Enter option: '))
             if y == 1:
                 n_addr = input('Enter new address: ')
-                DbManager.updateTable(tuple(n_addr,e_name),0)
+                DbManager.updateTable(e_name, n_addr, 3)
             elif y == 2:
                 n_type = input('Enter new type: ')
-                DbManager.updateTable(tuple(n_type,e_name),1)
+                DbManager.updateTable(e_name, n_type, 4)
             elif y == 3:
                 n_name = input('Enter new name: ')
-                DbManager.updateTable(tuple(n_name,e_name),2)
+                DbManager.updateTable(e_name, n_name, 5)
             elif y == 4:
                 n_syndicate = input('Syndicate True or False: ')
-                DbManager.updateTable(tuple(n_syndicate,e_name),4)
+                DbManager.updateTable(e_name, n_syndicate, 6)
             elif y == 5:
                 charge = input('Enter syndicate charge: ')
-                DbManager.updateTable(tuple(charge,e_name),5)
+                DbManager.updateTable(charge, e_name, 5)
             elif y == 6:
                 n_pMethod = input('Enter new payment method: ')
-                DbManager.updateTable(tuple(n_pMethod,e_name),3)
+                DbManager.updateTable(n_pMethod, e_name, 3)
+        elif x == 7:
+            print('------------------------')
+            print('1.Pay today\'s employees')
+            print('2.Pay in a given period')
+            print('------------------------')
+
+            z = int(input('option: '))
+            if z == 1:
+                paymnt = system_postings.PaymentSchedule()
+                paymnt.payWeekly()
+                paymnt.pay2Weekly()
+                paymnt.payMonthly()
+            else:
+                days = int(input('Enter period: '))
+                paymnt = system_postings.PaymentSchedule()
+                paymnt.payWeekly(days)
+                paymnt.pay2Weekly(days)
+                paymnt.payMonthly(days)
         else:
             break
