@@ -1,9 +1,10 @@
-import datetime
 from sqlalchemy import create_engine, exc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import Column, Integer, String, Boolean, Date, Float
 import datetime as dt
+
+jTypes = {"hourly": "hourly wage", "salaried": "monthly salary", "commissioned": "commission"}
 
 # MySQL connector defined
 engine = create_engine("mysql+pymysql://user:password@localhost:port/database", echo=True)
@@ -16,14 +17,26 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 
+class PersoSchedule(Base):
+    __tablename__ = 'schedules'
+
+    id = Column(Integer, primary_key=True, unique=True, autoincrement=True, nullable=False)
+    dayCode = Column(Integer)
+    scheDs = Column(String(15))
+
+    def __init__(self, id, dayCode, scheDs):
+        self.id = id
+        self.dayCode = dayCode
+        self.scheDs = scheDs
+
 class Syndicate(Base):
     __tablename__ = 'syndicate'
 
     id = Column(Integer, primary_key=True, unique=True, autoincrement=True, nullable=False)
     name = Column(String(55))
     address = Column(String(90))
-    syndicateCharge = Column(Float)
-    serviceCharge = Column(Float)
+    syndicateCharge = Column(Integer)
+    serviceCharge = Column(Integer)
 
     def __init__(self, id, name, address, syndicateCharge, serviceCharge):
         self.id = id
@@ -65,8 +78,8 @@ class Employee(Base):
     payType = Column(String(25))
     payMethod = Column(Integer)
     isInSyndicate = Column(Boolean)
-    syndicateCharge = Column(Float)
-    serviceCharge = Column(Float)
+    syndicateCharge = Column(Integer)
+    serviceCharge = Column(Integer)
     nextPayment = Column(Date)
     wage = Column(Float)
     pointCardId = Column(String(80))
@@ -118,11 +131,17 @@ class SQLManager:
 
     # Method responsible for performing the remove operation on a table in our database, using the
     # parameters specified in the class attributes and received from the method call
-    def deleteFromTable(self, value):
+    def deleteFromTable(self, value, opt):
         try:
             To_rmv = self.searchInTable(value, 0)
-
-            session.delete(To_rmv)
+            To_rmv_synd = self.searchInTable(value, 3)
+            if opt == 2:
+                To_rmv.isInSyndicate = 0
+                session.delete(To_rmv_synd)
+            else:
+                session.delete(To_rmv)
+                if To_rmv_synd:
+                    session.delete(To_rmv_synd)
             session.commit()
             print("----------------------------")
             print("Successfully removed")
@@ -157,21 +176,31 @@ class SQLManager:
                 addrFunc = self.searchInTable(value, 0)
                 addrFunc.address = value2
 
+                addrSynd = self.searchInTable(value, 3)
+                if addrSynd:
+                    addrSynd.address = value2
+
                 session.commit()
             elif up_op == 4:
                 typFunc = self.searchInTable(value, 0)
-                if value2.lower() == 'hourly':
-                    typFunc.jType = value2
-                    typFunc.payType = 'hourly wage'
-                elif value2.lower() == 'commissioned':
-                    typFunc.jType = value2
-                    typFunc.payType = 'commission'
-                else:
-                    typFunc.jType = value2
-                    typFunc.payType = 'monthly salary'
+
+                typFunc.jType = value2
+                typFunc.payType = jTypes[value2]
+
+                session.commit()
             elif up_op == 5:
                 nnameFunc = self.searchInTable(value, 0)
                 nnameFunc.name = value2
+
+                nameSynd = self.searchInTable(value, 3)
+                if nameSynd:
+                    nameSynd.name = value2
+
+                query = session.query(Sales).filter(Sales.sellerName == value).all()
+
+                if query:
+                    for i in query:
+                        i.name = value2
 
                 session.commit()
             elif up_op == 6:
@@ -190,6 +219,28 @@ class SQLManager:
                     Funct.nextPayment = date + dt.timedelta(30)
                     Funct.serviceCharge = 0
                     session.commit()
+            elif up_op == 7:
+                func = self.searchInTable(value, 0)
+                if func:
+                    func.syndicateCharge = value2
+
+                syndFunc = self.searchInTable(value, 3)
+                if syndFunc:
+                    syndFunc.syndicateCharge = value2
+
+                session.commit()
+            elif up_op == 8:
+                func = self.searchInTable(value, 0)
+                func.payType = value2
+
+                session.commit()
+            elif up_op == 9:
+                query = session.query(Sales).filter(Sales.sellerName == value).all()
+
+                for i in query:
+                    i.wasCommissioned = 1
+
+                session.commit()
 
             print("----------------------------")
             print("Table updated successfully")
@@ -212,21 +263,20 @@ class SQLManager:
             if opt == 0:
                 slct = session.query(Employee).filter(Employee.name == value).first()
             elif opt == 1:
-                query = session.query(Sales).filter(Sales.name == value).all()
+                query = session.query(Sales).filter(Sales.sellerName == value).all()
                 slct = 0
                 for i in query:
                     slct += i.salePrice
-                    i.wasCommissioned = True
-                    session.commit()
+
             elif opt == 2:
-                query = session.query(Employee).filter(Employee.payType == value).all()
+                query = session.query(Employee).filter(Employee.jType == value).all()
                 slct = []
 
                 for c in query:
                     slct.append(c.name)
 
             elif opt == 3:
-                query = session.query()
+                slct = session.query(Syndicate).filter(Syndicate.name == value).first()
 
             print("----------------------------")
             print("Search completed successfully")

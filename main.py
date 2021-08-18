@@ -20,6 +20,7 @@ if __name__ == '__main__':
         print("5 - Launch service charge")
         print("6 - Update employee record")
         print("7 - Make today\'s payments")
+        print("8 - Personalized schedules")
         print("11 - EXIT")
         print("----------------------------")
         x = int(input('Enter your option: '))
@@ -39,9 +40,9 @@ if __name__ == '__main__':
             print("------- Commissioned -------")
             print("----------------------------")
             j_type = input('Enter the employee\'s job: ')
-
+            tax = 0
             if isInSyndicate:
-                tax = input('Enter the percent of syndicate charge: ')
+                tax = input('Enter the syndicate charge: ')
                 DbManager.insertInTable(
                     sqlmanager.Syndicate(
                         None, name, address, tax, 0
@@ -53,14 +54,14 @@ if __name__ == '__main__':
             if j_type.lower() == 'hourly':
                 DbManager.insertInTable(
                     sqlmanager.Employee(
-                        None, name, address, j_type, 'hourly wage', payMethod, isInSyndicate, 0,
+                        None, name, address, j_type, 'hourly wage', payMethod, isInSyndicate, tax,
                         0, dt.date.today() + dt.timedelta(7), wage, str(uuid.uuid4()), 0, None, None
                     )
                 )
             elif j_type.lower() == 'salaried':
                 DbManager.insertInTable(
                     sqlmanager.Employee(
-                        None, name, address, j_type, 'monthly salary', payMethod, isInSyndicate, 0,
+                        None, name, address, j_type, 'monthly salary', payMethod, isInSyndicate, tax,
                         0, dt.date.today() + dt.timedelta(30), wage, None, None, None, None
                     )
                 )
@@ -69,13 +70,13 @@ if __name__ == '__main__':
 
                 DbManager.insertInTable(
                     sqlmanager.Employee(
-                        None, name, address, j_type, 'commission', payMethod, isInSyndicate, 0,
+                        None, name, address, j_type, 'commission', payMethod, isInSyndicate, tax,
                         0, dt.date.today() + dt.timedelta(15), wage, None, None, 0, percentComm
                     )
                 )
         elif x == 2:
             name = input('Enter the name of the employee to be removed: ')
-            DbManager.deleteFromTable(name)
+            DbManager.deleteFromTable(name, 1)
         elif x == 3:
             name = input('Enter your name: ')
             Point_card = system_postings.PointCard()
@@ -129,13 +130,45 @@ if __name__ == '__main__':
                 DbManager.updateTable(e_name, n_name, 5)
             elif y == 4:
                 n_syndicate = input('Syndicate True or False: ')
-                DbManager.updateTable(e_name, n_syndicate, 6)
+                name = input('Enter your name: ')
+                if n_syndicate.lower() == 'true':
+                    address = input('Enter you address: ')
+                    tax = input('Enter tax: ')
+                    DbManager.insertInTable(
+                        sqlmanager.Syndicate(
+                            None, name, address, tax, 0
+                        )
+                    )
+                else:
+                    DbManager.deleteFromTable(name, 2)
             elif y == 5:
                 charge = input('Enter syndicate charge: ')
-                DbManager.updateTable(charge, e_name, 5)
+                DbManager.updateTable(e_name, charge, 7)
             elif y == 6:
-                n_pMethod = input('Enter new payment method: ')
-                DbManager.updateTable(n_pMethod, e_name, 3)
+                print('------------------------')
+                print("Table of week days")
+                print("0 - Monday")
+                print("1 - Tuesday")
+                print("2 - Wednessday")
+                print("3 - Thursday")
+                print("4 - Friday")
+                print('------------------------')
+                name = input('Enter your name: ')
+                dCode = int(input('Enter the day of payment on schedule: '))
+                newPaySched = input('Enter the new payment schedule description: ').lower()
+                DbManager.insertInTable(
+                    sqlmanager.PersoSchedule(None, dCode, newPaySched)
+                )
+                if newPaySched == 'monday':
+                    DbManager.updateTable(name, 'monday', 8)
+                elif newPaySched == 'tuesday':
+                    DbManager.updateTable(name, 'tuesday', 8)
+                elif newPaySched == 'wednessday':
+                    DbManager.updateTable(name, 'wednessday', 8)
+                elif newPaySched == 'thursday':
+                    DbManager.updateTable(name, 'thursday', 8)
+                elif newPaySched == 'friday':
+                    DbManager.updateTable(name, 'friday', 8)
         elif x == 7:
             print('------------------------')
             print('1.Pay today\'s employees')
@@ -154,5 +187,31 @@ if __name__ == '__main__':
                 paymnt.payWeekly(days)
                 paymnt.pay2Weekly(days)
                 paymnt.payMonthly(days)
+                paymnt.PersoPayment(days)
+        elif x == 8:
+            print('------------------------')
+            print("Table of week days")
+            print("0 - Monday")
+            print("1 - Tuesday")
+            print("2 - Wednessday")
+            print("3 - Thursday")
+            print("4 - Friday")
+            print('------------------------')
+            name = input('Enter your name: ')
+            dCode = int(input('Enter the day of payment on schedule: '))
+            newPaySched = input('Enter the new payment schedule description: ').lower()
+            DbManager.insertInTable(
+                sqlmanager.PersoSchedule(None, dCode, newPaySched)
+            )
+            if newPaySched == 'monday':
+                DbManager.updateTable(name, 'monday', 8)
+            elif newPaySched == 'tuesday':
+                DbManager.updateTable(name, 'tuesday', 8)
+            elif newPaySched == 'wednessday':
+                DbManager.updateTable(name, 'wednessday', 8)
+            elif newPaySched == 'thursday':
+                DbManager.updateTable(name, 'thursday', 8)
+            elif newPaySched == 'friday':
+                DbManager.updateTable(name, 'friday', 8)
         else:
             break
