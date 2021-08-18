@@ -139,7 +139,7 @@ class Comissioned:
         if totalSells:
             return self.wage + (float(self.comissionPercent) * totalSells)
 
-        return 0
+        return self.wage
 
     # Method that returns our character's attributes as a tuple so we can access
     # them without having to directly access the attributes in the class
@@ -151,7 +151,7 @@ class Comissioned:
 
     # Method that constructs our class from the result of SELECT query in database
     def constructCommsFSelect(self, SelectResult):
-        self.id = SelectResult.id
+        self.id = None
         self.name = SelectResult.name
         self.address = SelectResult.address
         self.jType = SelectResult.jType
